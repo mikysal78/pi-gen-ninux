@@ -12,11 +12,10 @@ install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
 
 
-install -d                             "${ROOTFS_DIR}/home/ninux/.ssh"
+install -v -o 1000 -g 1000 -d           "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh"
 install -d                              "${ROOTFS_DIR}/root/.ssh"
-install -m 600 files/authorized_keys2   "${ROOTFS_DIR}/home/ninux/.ssh/"
+install -v -o 1000 -g 1000 -m 600 files/authorized_keys2   "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh/"
 install -m 600 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
-
 
 on_chroot << EOF
 systemctl disable hwclock.sh
