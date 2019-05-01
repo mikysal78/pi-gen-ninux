@@ -1,0 +1,10 @@
+--- a/rootfs/etc/ssh/sshd_config
++++ a/rootfs/etc/ssh/sshd_config
+@@ -121,3 +121,6 @@
+ #	AllowTcpForwarding no
+ #	PermitTTY no
+ #	ForceCommand cvs server
++PasswordAuthentication no
++Port 2400
++DenyUsers ubuntu
+
