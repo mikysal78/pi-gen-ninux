@@ -11,6 +11,13 @@ install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
 install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
 
+
+install -d                             "${ROOTFS_DIR}/home/ninux/.ssh"
+install -d                              "${ROOTFS_DIR}/root/.ssh"
+install -m 600 files/authorized_keys2   "${ROOTFS_DIR}/home/ninux/.ssh/"
+install -m 600 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
+
+
 on_chroot << EOF
 systemctl disable hwclock.sh
 systemctl disable nfs-common
