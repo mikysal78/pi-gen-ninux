@@ -1,7 +1,15 @@
-# pi-gen
+# pi-gen-ninux
 
-_Tool used to create the raspberrypi.org Raspbian images_
+_Tool used to create the raspberrypi.org Raspbian images for Ninux_
+_forked from https://github.com/RPi-Distro/pi-gen_
 
+### Personalizzazioni
+ * Username: ninux - Password: ninux
+ * Creata la chiave ssh in root e utente ninux
+ * Abilitazione SSH di default
+ * Accesso wifi su rete ninux.org
+ * Impostazione TimeZone su Roma
+ * Hostname impostato su raspninux
 
 ## Dependencies
 
