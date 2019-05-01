@@ -12,10 +12,20 @@ install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
 
 
-install -v -o 1000 -g 1000 -d           "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh"
-install -d                              "${ROOTFS_DIR}/root/.ssh"
-install -v -o 1000 -g 1000 -m 600 files/authorized_keys2   "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh/"
-install -m 600 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
+install -m 700 -d                       "${ROOTFS_DIR}/root/.ssh"
+install -m 644 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
+
+install -v files/olsrd2_0.15.1-96_armhf.deb ${ROOTFS_DIR}/tmp/
+
+on_chroot << EOF
+dpkg -i /tmp/olsrd2_0.15.1-96_armhf.deb
+EOF
+
+if [ ! -f "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd" ]; then
+    rm -f "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
+    echo "${FIRST_USER_NAME} ALL=(ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd"
+    chmod 0440 "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd"
+fi
 
 on_chroot << EOF
 systemctl disable hwclock.sh
