@@ -5,11 +5,14 @@ _forked from https://github.com/RPi-Distro/pi-gen_
 
 ### Personalizzazioni
  * Username: ninux - Password: ninux
- * Creata la chiave ssh in root e utente ninux
- * Abilitazione SSH di default
+ * Creata la chiave ssh in root
+ * Abilitazione SSH su porta 2400
  * Accesso wifi su rete ninux.org
  * Impostazione TimeZone su Roma
  * Hostname impostato su raspninux
+ * banner ninux
+ * set bashrc
+ * OLSRd v.2 e configurazione
 
 ## Dependencies
 
