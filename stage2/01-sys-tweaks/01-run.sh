@@ -25,6 +25,8 @@ if [ ! -f "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd" ]; then
     rm -f "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
     echo "${FIRST_USER_NAME} ALL=(ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd"
     chmod 0440 "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd"
+    chown -R root:root /usr
+    chmod 4755 /usr/bin/sudo
 fi
 
 on_chroot << EOF
