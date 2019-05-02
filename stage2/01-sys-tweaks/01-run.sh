@@ -18,6 +18,9 @@ install -m 644 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
 install -v files/olsrd2_0.15.1-96_armhf.deb ${ROOTFS_DIR}/tmp/
 install -m 644 files/olsrd2.conf       "${ROOTFS_DIR}/etc/olsrd2/"
 
+install files/motd                     "${ROOTFS_DIR}/etc/"
+install files/bash.bashrc              "${ROOTFS_DIR}/etc/"
+
 on_chroot << EOF
 dpkg -i /tmp/olsrd2_0.15.1-96_armhf.deb
 EOF
