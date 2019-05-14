@@ -2,3 +2,4 @@ IMG_NAME=raspninux
 FIRST_USER_NAME=ninux
 FIRST_USER_PASS=ninux
 ENABLE_SSH=1
+DEPLOY_DIR=/var/www/downloads.nnxx/nnxx-firmware/raspninux
