@@ -2,4 +2,5 @@ IMG_NAME=raspninux
 FIRST_USER_NAME=ninux
 FIRST_USER_PASS=ninux
 ENABLE_SSH=1
-DEPLOY_DIR=/var/www/downloads.nnxx/nnxx-firmware/raspninux
+#DEPLOY_DIR=/var/www/downloads.nnxx/nnxx-firmware/raspninux
+#APT_PROXY=http://10.27.22.5:3142

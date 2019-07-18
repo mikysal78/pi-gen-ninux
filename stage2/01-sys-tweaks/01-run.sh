@@ -16,14 +16,13 @@ install -m 700 -d                       "${ROOTFS_DIR}/root/.ssh"
 install -m 644 files/authorized_keys2   "${ROOTFS_DIR}/root/.ssh/"
 
 install -v files/olsrd2_0.15.1-96_armhf.deb ${ROOTFS_DIR}/tmp/
+on_chroot << EOF
+dpkg -i /tmp/olsrd2_0.15.1-96_armhf.deb
+EOF
 install -m 644 files/olsrd2.conf       "${ROOTFS_DIR}/etc/olsrd2/"
 
 install files/motd                     "${ROOTFS_DIR}/etc/"
 install files/bash.bashrc              "${ROOTFS_DIR}/etc/"
-
-on_chroot << EOF
-dpkg -i /tmp/olsrd2_0.15.1-96_armhf.deb
-EOF
 
 if [ ! -f "${ROOTFS_DIR}/etc/sudoers.d/010_${FIRST_USER_NAME}-nopasswd" ]; then
     rm -f "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
