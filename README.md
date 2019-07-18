@@ -13,6 +13,7 @@ _forked from https://github.com/RPi-Distro/pi-gen_
  * banner ninux
  * set bashrc
  * OLSRd v.2 e configurazione
+ * Upload immagine sul server di Download NNXX
 
 ## Dependencies
 
