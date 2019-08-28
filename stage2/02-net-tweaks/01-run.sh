@@ -15,3 +15,5 @@ on_chroot <<EOF
 wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" >> "/etc/wpa_supplicant/wpa_supplicant.conf"
 EOF
 fi
+
+install -m 700 files/static-ip.sh   "${ROOTFS_DIR}/root/"
