@@ -254,13 +254,3 @@ if [ -x postrun.sh ]; then
 fi
 
 log "End ${BASE_DIR}"
-
-#echo ""
-#echo "Copio l'immagine sul server:"
-#echo "http://downloads.nnxx.ninux.org/raspninux/"
-
-#local_file="$DEPLOY_DIR/$ZIP_FILENAME-lite.zip"
-#remote_host="jenkins.nnxx.ninux.org"
-#remote_path="/var/www/downloads.nnxx/nnxx-firmware/raspninux/"
-#scp -P 2400 $local_file root@$remote_host:$remote_path
-
