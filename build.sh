@@ -46,11 +46,11 @@ EOF
 			SUB_STAGE_QUILT_PATCH_DIR="$(basename "$SUB_STAGE_DIR")-pc"
 			mkdir -p "$SUB_STAGE_QUILT_PATCH_DIR"
 			ln -snf "$SUB_STAGE_QUILT_PATCH_DIR" .pc
+			quilt upgrade
 			if [ -e "${SUB_STAGE_DIR}/${i}-patches/EDIT" ]; then
 				echo "Dropping into bash to edit patches..."
 				bash
 			fi
-			quilt upgrade
 			RC=0
 			quilt push -a || RC=$?
 			case "$RC" in
@@ -168,6 +168,15 @@ export WPA_PASSWORD
 export WPA_COUNTRY
 export ENABLE_SSH="${ENABLE_SSH:-0}"
 
+export LOCALE_DEFAULT="${LOCALE_DEFAULT:-en_GB.UTF-8}"
+
+export KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-gb}"
+export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (UK)}"
+
+export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/London}"
+
+export GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
+
 export BASE_DIR
 
 export CLEAN
@@ -197,6 +206,8 @@ source "${SCRIPT_DIR}/common"
 # shellcheck source=scripts/dependencies_check
 source "${SCRIPT_DIR}/dependencies_check"
 
+dependencies_check "${BASE_DIR}/depends"
+
 #check username is valid
 if [[ ! "$FIRST_USER_NAME" =~ ^[a-z][-a-z0-9_]*$ ]]; then
 	echo "Invalid FIRST_USER_NAME: $FIRST_USER_NAME"
@@ -207,8 +218,6 @@ if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
 	echo "Could not reach APT_PROXY server: ${APT_PROXY}"
 	exit 1
 fi
-
-dependencies_check "${BASE_DIR}/depends"
 
 mkdir -p "${WORK_DIR}"
 log "Begin ${BASE_DIR}"
@@ -246,12 +255,12 @@ fi
 
 log "End ${BASE_DIR}"
 
-echo ""
-echo "Copio l'immagine sul server:"
-echo "http://downloads.nnxx.ninux.org/raspninux/"
+#echo ""
+#echo "Copio l'immagine sul server:"
+#echo "http://downloads.nnxx.ninux.org/raspninux/"
 
-local_file="$DEPLOY_DIR/$ZIP_FILENAME-lite.zip"
-remote_host="jenkins.nnxx.ninux.org"
-remote_path="/var/www/downloads.nnxx/nnxx-firmware/raspninux/"
-scp -P 2400 $local_file root@$remote_host:$remote_path
+#local_file="$DEPLOY_DIR/$ZIP_FILENAME-lite.zip"
+#remote_host="jenkins.nnxx.ninux.org"
+#remote_path="/var/www/downloads.nnxx/nnxx-firmware/raspninux/"
+#scp -P 2400 $local_file root@$remote_host:$remote_path
 
