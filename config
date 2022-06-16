@@ -1,0 +1,12 @@
+IMG_NAME=ninuxberry
+TARGET_HOSTNAME=ninuxberry
+KEYBOARD_KEYMAP=it
+KEYBOARD_LAYOUT=Italiana
+TIMEZONE_DEFAULT=Europe/Rome
+FIRST_USER_NAME=ninux
+FIRST_USER_PASS=ninux
+WPA_ESSID=ninux.org-basilicata
+WPA_PASSWORD=Rossella:90
+WPA_COUNTRY=US
+ENABLE_SSH=1
+STAGE_LIST='stage0 stage1 stage2 ninux'
