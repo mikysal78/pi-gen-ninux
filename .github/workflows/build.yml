@@ -11,7 +11,7 @@ jobs:
         with:
           pi-gen-repository: mikysal78/pi-gen-ninux
           image-name: ninuxberry
-          stage-list: stage0 stage1 stage2 ninux
+          stage-list: stage0 stage1 stage2
           verbose-output: true
           enable-noobs: true
           compression: zip
