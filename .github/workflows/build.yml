@@ -1,34 +1,53 @@
-name: Build and publish
-on:
-  push:
-    branches:
-      - master
+name: Run pi-gen
+on: 
+  workflow_dispatch:
+
 jobs:
   pi-gen:
     runs-on: ubuntu-latest
     steps:
-      - uses: usimd/pi-gen-action@v1.10.0
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p clean-stage &&
+          {
+          cat > clean-stage/prerun.sh <<EOF
+          #!/bin/bash
+          set -x
+          rm -f ${{ github.workspace }}/pi-gen/stage[45]/EXPORT*
+          EOF
+          } &&
+          chmod +x clean-stage/prerun.sh
+
+      - uses: usimd/pi-gen-action@v10
+        id: build
         with:
-          image-name: ninuxberry
           pi-gen-repository: mikysal78/pi-gen-ninux
-          stage-list: stage0 stage1 stage2
+          image-name: ninuxberry
+          stage-list: clean-stage stage0 stage1 stage2 ninux
+          verbose-output: true
+          enable-noobs: true
           compression: zip
           compression-level: 9
-          enable-ssh: 1
-          export-last-stage-only: true
-          github-token: ${{ github.token }}
+          locale: it_IT.UTF-8
           hostname: ninuxberry
           keyboard-keymap: it
-          keyboard-layout: Italiana (IT)
-          locale: it_IT.UTF-8
-          password: 'ninux'
-          pi-gen-dir: pi-gen
-          pi-gen-version: arm64
-          pubkey-only-ssh: 0
-          pubkey-ssh-first-user: ''
-          release: bookworm
-          timezone: Europe/Rome
+          keyboard-layout: Italiana
           username: ninux
-          wpa-country: 'US'
-          wpa-essid: 'ninux.org'
-          wpa-password: 'Ninux:2025'
+          wpa-essid: ninux-org
+          wpa-password: 'ninux2025'
+          timezone: Europe/Rome
+          export-last-stage-only: false
+
+      - run: tree 
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pi-gen-image
+          path: ${{ steps.build.outputs.image-path }}
+          retention-days: 2
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pi-gen-noobs-image
+          path: ${{ steps.build.outputs.image-noobs-path }}
+          retention-days: 2
