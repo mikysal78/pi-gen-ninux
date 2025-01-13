@@ -5,7 +5,7 @@ jobs:
       - uses: usimd/pi-gen-action@v1.10.0
         with:
           image-name: ninuxberry
-          stage-list: stage0 stage1 stage2 ./ninux
+          stage-list: stage0 stage1 stage2
 	  compression: zip
           compression-level: 9
 	  enable-ssh: 1
