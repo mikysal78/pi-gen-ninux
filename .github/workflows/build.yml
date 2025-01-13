@@ -6,24 +6,12 @@ jobs:
   pi-gen:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          mkdir -p clean-stage &&
-          {
-          cat > clean-stage/prerun.sh <<EOF
-          #!/bin/bash
-          set -x
-          rm -f ${{ github.workspace }}/pi-gen/stage[45]/EXPORT*
-          EOF
-          } &&
-          chmod +x clean-stage/prerun.sh
-
       - uses: usimd/pi-gen-action@v1.10.0
         id: build
         with:
           pi-gen-repository: mikysal78/pi-gen-ninux
           image-name: ninuxberry
-          stage-list: clean-stage stage0 stage1 stage2 ninux
+          stage-list: stage0 stage1 stage2 ninux
           verbose-output: true
           enable-noobs: true
           compression: zip
