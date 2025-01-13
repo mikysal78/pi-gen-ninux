@@ -1,0 +1,98 @@
+            - name: pi-gen-action
+  # You may pin to the exact commit or the version.
+  # uses: usimd/pi-gen-action@f2f0609b5318457c8d266db2e87d90c08cb6b638
+  uses: usimd/pi-gen-action@v1.10.0
+  with:
+    # If you require the use of an apt proxy, set it here. This proxy setting will not be included in the image,
+making it safe to use an apt-cacher or similar package for development.
+
+    apt-proxy: # optional, default is 
+    # Final image name.
+    image-name: 
+    # The release name to use in `/etc/issue.txt`. The default should only be used for official Raspberry Pi builds.
+    pi-gen-release: # optional, default is Raspberry Pi reference
+    # Setting to `1` will prevent pi-gen from dropping the "capabilities" feature. Generating the root filesystem with capabilities enabled and running
+it from a filesystem that does not support capabilities (like NFS) can cause issues. Only enable this if you understand what it is.
+
+    setfcap: # optional, default is 
+    # List of stage name to execute in given order. Relative and absolute paths to custom stage directories are allowed here.
+Note that by default pi-gen exports images in stage2 (lite), stage4 and stage5. You probably want to hook in custom stages
+before one of the exported stages. Otherwise, the action will make sure any custom stage will include an image export directive.
+
+    stage-list: # optional, default is stage0 stage1 stage2
+    # The release version to build images against. Valid values are jessie, stretch, buster, bullseye, bookworm, and testing.
+    release: # optional, default is bookworm
+    # Compression to apply on final image (either "none", "zip", "xz" or "gz").
+    compression: # optional, default is zip
+    # Compression level to be used. From 0 to 9 (refer to the tool man page for more information on this. Usually 0 is no compression but very fast, up to 9 with the best compression but very slow).
+    compression-level: # optional, default is 6
+    # Default locale of the system image.
+    locale: # optional, default is en_GB.UTF-8
+    # Host name of the image.
+    hostname: # optional, default is raspberrypi
+    # Default keyboard keymap.
+    keyboard-keymap: # optional, default is gb
+    # Default keyboard layout.
+    keyboard-layout: # optional, default is English (UK)
+    # System timezone.
+    timezone: # optional, default is Europe/London
+    # Name of the initial user account.
+    username: # optional, default is pi
+    # Password of the intial user account, locked if empty.
+    password: # optional
+    # Disable the renaming of the first user during the first boot. This make it so 'username' stays activated. 
+'username' must be set for this to work. Please be aware of the implied security risk of defining a default 
+username and password for your devices.
+
+    disable-first-boot-user-rename: # optional, default is 0
+    # SSID of a default wifi network to connect to.
+    wpa-essid: # optional
+    # Password of default wifi network to connect to.
+    wpa-password: # optional
+    # Wifi country code of default network to connect to.
+    wpa-country: # optional
+    # Enable SSH access to Pi.
+    enable-ssh: # optional, default is 0
+    # Setting this to a value will make that value the contents of the FIRST_USER_NAME's ~/.ssh/authorized_keys.
+Obviously the value should therefore be a valid authorized_keys file. Note that this does not automatically
+enable SSH.
+
+    pubkey-ssh-first-user: # optional
+    # Setting to `1` will disable password authentication for SSH and enable public key authentication. Note that if
+SSH is not enabled this will take effect when SSH becomes enabled.
+
+    pubkey-only-ssh: # optional, default is 0
+    # Additional options to include in PIGEN_DOCKER_OPTS
+    docker-opts: # optional, default is 
+    # GitHub repository to fetch pi-gen from, must be a fork from RPi-Distro/pi-gen.
+    pi-gen-repository: # optional, default is RPi-Distro/pi-gen
+    # If this feature is enabled, the action will configure pi-gen to not export any stage as image but the last one
+defined in property 'stage-list'. This is helpful when building a single image flavor (in contrast to building
+a lite/server and full-blown desktop image), since it speeds up the build process significantly.
+
+    export-last-stage-only: # optional, default is true
+    # Release version of pi-gen to use. This can both be a branch or tag name known in the pi-gen repository.
+    pi-gen-version: # optional, default is arm64
+    # Set whether a NOOBS image should be built as well. If enabled, the output directory containing the NOOBS files will be saved as output variable 'image-noobs-path'.
+    enable-noobs: # optional
+    # Comma or whitespace separated list of additional packages to install on host before running pi-gen.
+Use this list to add any packages your custom stages may require. Note that this is not affecting the final image. In order to add additional packages, you need to add a respective 'XX-packages' file in your custom stage.
+
+    extra-host-dependencies: # optional, default is 
+    # Comma or whitespace separated list of additional modules to load on host before running pi-gen.
+If your custom stage requires additional software or kernel modules to be loaded, add them here. Note that this is not meant to configure modules to be loaded in the target image.
+
+    extra-host-modules: # optional, default is 
+    # Enabling this option will remove plenty of components from the GitHub Actions runner that are not mandatory pre-requisites for a (vanilla) pi-gen build.
+This shall increase the available disk space so that also large images can be compiled on a free GHA runner (benchmark is the full image including a 
+desktop environment).
+If any packages are missing during the build consider adding them to the `extra-host-dependencies` list.
+
+    increase-runner-disk-size: # optional
+    # Path where selected pi-gen ref will be checked out to. If the path does not yet exist, it will be created (including its parents).
+    pi-gen-dir: # optional, default is pi-gen
+    # Print all output from pi-gen.
+    verbose-output: # optional
+    # Token to use for checking out pi-gen repo.
+    github-token: # optional, default is ${{ github.token }}
+          
