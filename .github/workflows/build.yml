@@ -5,10 +5,10 @@ jobs:
       - uses: usimd/pi-gen-action@v1.10.0
         with:
           image-name: ninuxberry
-          stage-list: stage0 stage1 stage2
-	  compression: zip
+          stage-list: stage0 stage1 stage2 ninux
+          compression: zip
           compression-level: 9
-	  enable-ssh: 1
+          enable-ssh: 1
           export-last-stage-only: true
           github-token: ${{ github.token }}
           hostname: ninuxberry
@@ -22,8 +22,8 @@ jobs:
           pubkey-only-ssh: 0
           pubkey-ssh-first-user: ''
           release: bookworm
-	  timezone: Europe/Rome
-	  username: ninux
-	  wpa-country: 'US'
-	  wpa-essid: 'ninux.org-basilicata'
-	  wpa-password: 'Ninux:2025'
+          timezone: Europe/Rome
+          username: ninux
+          wpa-country: 'US'
+          wpa-essid: 'ninux.org-basilicata'
+          wpa-password: 'Ninux:2025'
