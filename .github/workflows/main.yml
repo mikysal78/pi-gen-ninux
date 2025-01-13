@@ -1,4 +1,4 @@
-            - name: pi-gen-action
+- name: pi-gen-action
   # You may pin to the exact commit or the version.
   # uses: usimd/pi-gen-action@f2f0609b5318457c8d266db2e87d90c08cb6b638
   uses: usimd/pi-gen-action@v1.10.0
