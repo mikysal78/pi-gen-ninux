@@ -18,7 +18,7 @@ jobs:
           } &&
           chmod +x clean-stage/prerun.sh
 
-      - uses: usimd/pi-gen-action@v10
+      - uses: usimd/pi-gen-action@v1.10.0
         id: build
         with:
           pi-gen-repository: mikysal78/pi-gen-ninux
