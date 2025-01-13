@@ -10,6 +10,7 @@ jobs:
       - uses: usimd/pi-gen-action@v1.10.0
         with:
           image-name: ninuxberry
+          pi-gen-repository: mikysal78/pi-gen-ninux
           stage-list: stage0 stage1 stage2 ./ninux
           compression: zip
           compression-level: 9
@@ -22,7 +23,6 @@ jobs:
           locale: it_IT.UTF-8
           password: 'ninux'
           pi-gen-dir: pi-gen
-          pi-gen-repository: mikysal78/pi-gen-ninux
           pi-gen-version: arm64
           pubkey-only-ssh: 0
           pubkey-ssh-first-user: ''
