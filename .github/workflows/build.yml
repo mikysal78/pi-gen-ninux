@@ -11,7 +11,7 @@ jobs:
         with:
           image-name: ninuxberry
           pi-gen-repository: mikysal78/pi-gen-ninux
-          stage-list: stage0 stage1 stage2 ./ninux
+          stage-list: stage0 stage1 stage2
           compression: zip
           compression-level: 9
           enable-ssh: 1
