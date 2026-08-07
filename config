@@ -1,12 +1,15 @@
-IMG_NAME=ninuxberry
-TARGET_HOSTNAME=ninuxberry
-KEYBOARD_KEYMAP=it
-KEYBOARD_LAYOUT=Italiana
-TIMEZONE_DEFAULT=Europe/Rome
-FIRST_USER_NAME=ninux
-FIRST_USER_PASS=ninux
-WPA_ESSID=ninux.org-basilicata
-WPA_PASSWORD=Rossella:90
-WPA_COUNTRY=US
-ENABLE_SSH=1
-STAGE_LIST='stage0 stage1 stage2 ninux'
+# build.sh sources this file *after* inheriting the environment, so every
+# variable must keep an already exported value (e.g. one set by Jenkins)
+# instead of overwriting it.
+IMG_NAME="${IMG_NAME:-ninuxberry}"
+TARGET_HOSTNAME="${TARGET_HOSTNAME:-ninuxberry}"
+KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-it}"
+KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-Italiana}"
+TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/Rome}"
+FIRST_USER_NAME="${FIRST_USER_NAME:-ninux}"
+FIRST_USER_PASS="${FIRST_USER_PASS:-ninux}"
+WPA_ESSID="${WPA_ESSID:-ninux.org-basilicata}"
+WPA_PASSWORD="${WPA_PASSWORD:-Rossella:90}"
+WPA_COUNTRY="${WPA_COUNTRY:-IT}"
+ENABLE_SSH="${ENABLE_SSH:-1}"
+STAGE_LIST="${STAGE_LIST:-stage0 stage1 stage2 ninux}"
