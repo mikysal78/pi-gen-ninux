@@ -6,6 +6,10 @@ jobs:
   pi-gen:
     runs-on: ubuntu-latest
     steps:
+      # The action validates custom stages as directories in the workspace,
+      # before it clones pi-gen, so ./ninux has to be checked out first
+      - uses: actions/checkout@v4
+
       - uses: usimd/pi-gen-action@v1.10.0
         id: build
         with:
@@ -16,7 +20,7 @@ jobs:
           # Keep in sync with ./config, which is what the Jenkins build uses.
           release: bullseye
           image-name: ninuxberry
-          stage-list: stage0 stage1 stage2 ninux
+          stage-list: stage0 stage1 stage2 ./ninux
           # Only the ninux stage exports an image, stage2 would be a duplicate
           export-last-stage-only: true
           verbose-output: true
