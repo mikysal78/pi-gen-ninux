@@ -10,8 +10,15 @@ jobs:
         id: build
         with:
           pi-gen-repository: mikysal78/pi-gen-ninux
+          # Default is 'arm64', a branch that does not exist in this repository
+          pi-gen-version: master
+          # The action overwrites ./config, so every value has to be set here.
+          # Keep in sync with ./config, which is what the Jenkins build uses.
+          release: bullseye
           image-name: ninuxberry
-          stage-list: stage0 stage1 stage2
+          stage-list: stage0 stage1 stage2 ninux
+          # Only the ninux stage exports an image, stage2 would be a duplicate
+          export-last-stage-only: true
           verbose-output: true
           enable-noobs: true
           compression: zip
@@ -21,10 +28,13 @@ jobs:
           keyboard-keymap: it
           keyboard-layout: Italiana
           username: ninux
+          password: ninux
+          enable-ssh: 1
+          pubkey-ssh-first-user: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMuoHflKC6z/hH9l5qqinpQ5gNgmFI+r9c8Xu3kHnN9s mikysal78@gmail.com
           wpa-essid: ninux-org
           wpa-password: 'ninux2025'
+          wpa-country: IT
           timezone: Europe/Rome
-          export-last-stage-only: false
 
       - run: tree 
       
