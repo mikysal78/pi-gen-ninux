@@ -1,13 +1,20 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
+# Note: Avoid usage of arrays as MacOS users have an older version of bash (v3.x) which does not supports arrays
+set -eu
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+DIR="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 
 BUILD_OPTS="$*"
 
-DOCKER="docker"
+# Allow user to override docker command
+DOCKER=${DOCKER:-docker}
 
-if ! ${DOCKER} ps >/dev/null 2>&1; then
-	DOCKER="sudo docker"
+# Ensure that default docker command is not set up in rootless mode
+if \
+  ! ${DOCKER} ps    >/dev/null 2>&1 || \
+    ${DOCKER} info 2>/dev/null | grep -q rootless \
+; then
+	DOCKER="sudo ${DOCKER}"
 fi
 if ! ${DOCKER} ps >/dev/null; then
 	echo "error connecting to docker:"
@@ -78,51 +85,64 @@ BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@\-c\s?([^ ]+)@-c /config@')"
 # Check the arch of the machine we're running on. If it's 64-bit, use a 32-bit base image instead
 case "$(uname -m)" in
   x86_64|aarch64)
-    BASE_IMAGE=i386/debian:bullseye
+    BASE_IMAGE=docker.io/i386/debian:trixie
+    # Without an explicit platform, Docker 20.10 (Debian 12's docker.io) refuses
+    # the foreign-platform base image: "no matching manifest for linux/amd64"
+    PLATFORM=linux/386
     ;;
   *)
-    BASE_IMAGE=debian:bullseye
+    BASE_IMAGE=docker.io/debian:trixie
+    PLATFORM=""
     ;;
 esac
-${DOCKER} build --build-arg BASE_IMAGE=${BASE_IMAGE} -t pi-gen "${DIR}"
+${DOCKER} build ${PLATFORM:+--platform "${PLATFORM}"} --build-arg BASE_IMAGE=${BASE_IMAGE} -t pi-gen "${DIR}"
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
-	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}_cont' SIGINT SIGTERM
-	time ${DOCKER} run --rm --privileged \
-		--cap-add=ALL \
-		-v /dev:/dev \
-		-v /lib/modules:/lib/modules \
-		${PIGEN_DOCKER_OPTS} \
-		--volume "${CONFIG_FILE}":/config:ro \
-		-e "GIT_HASH=${GIT_HASH}" \
-		--volumes-from="${CONTAINER_NAME}" --name "${CONTAINER_NAME}_cont" \
-		pi-gen \
-		bash -e -o pipefail -c "dpkg-reconfigure qemu-user-static &&
-	# binfmt_misc is sometimes not mounted with debian bullseye image
-	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
-	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log deploy/" &
-	wait "$!"
+  DOCKER_CMDLINE_NAME="${CONTAINER_NAME}_cont"
+  DOCKER_CMDLINE_PRE="--rm"
+  DOCKER_CMDLINE_POST="--volumes-from=${CONTAINER_NAME}"
 else
-	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}' SIGINT SIGTERM
-	time ${DOCKER} run --name "${CONTAINER_NAME}" --privileged \
-		--cap-add=ALL \
-		-v /dev:/dev \
-		-v /lib/modules:/lib/modules \
-		${PIGEN_DOCKER_OPTS} \
-		--volume "${CONFIG_FILE}":/config:ro \
-		-e "GIT_HASH=${GIT_HASH}" \
-		pi-gen \
-		bash -e -o pipefail -c "dpkg-reconfigure qemu-user-static &&
-	# binfmt_misc is sometimes not mounted with debian bullseye image
-	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
-	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log deploy/" &
-	wait "$!"
+  DOCKER_CMDLINE_NAME="${CONTAINER_NAME}"
+  DOCKER_CMDLINE_PRE=""
+  DOCKER_CMDLINE_POST=""
 fi
 
+trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${DOCKER_CMDLINE_NAME}' SIGINT SIGTERM
+time ${DOCKER} run \
+  $DOCKER_CMDLINE_PRE \
+  --name "${DOCKER_CMDLINE_NAME}" \
+  --privileged \
+  ${PIGEN_DOCKER_OPTS} \
+  --volume "${CONFIG_FILE}":/config:ro \
+  -e "GIT_HASH=${GIT_HASH}" \
+  $DOCKER_CMDLINE_POST \
+  pi-gen \
+  bash -e -o pipefail -c "
+    mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc || true
+    # Use the host's armhf registration if it works in here; otherwise register
+    # the image's own (static) qemu-arm for the duration of the build, replacing
+    # any stale entry of ours. The newest entry is the one the kernel matches.
+    # Probe inside an empty chroot: a host entry without the F flag resolves its
+    # interpreter in the caller's filesystem, so it works in the container root
+    # but fails in every chroot the build makes.
+    if ! arch-test -c \"\$(mktemp -d)\" armhf; then
+      [ ! -e /proc/sys/fs/binfmt_misc/qemu-arm-rpi ] || echo -1 > /proc/sys/fs/binfmt_misc/qemu-arm-rpi
+      echo ':qemu-arm-rpi:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm:F' > /proc/sys/fs/binfmt_misc/register
+      trap 'echo -1 > /proc/sys/fs/binfmt_misc/qemu-arm-rpi' EXIT
+    fi
+    cd /pi-gen
+    ./build.sh ${BUILD_OPTS}
+    rsync -av work/*/build.log deploy/
+  " &
+  wait "$!"
+
+# Ensure that deploy/ is always owned by calling user
 echo "copying results from deploy/"
-${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
+${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy - | tar -xf -
+
+echo "copying log from container ${CONTAINER_NAME} to deploy/"
+${DOCKER} logs --timestamps "${CONTAINER_NAME}" &>deploy/build-docker.log
+
 ls -lah deploy
 
 # cleanup

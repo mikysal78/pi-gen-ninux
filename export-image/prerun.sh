@@ -1,87 +1,99 @@
 #!/bin/bash -e
 
-if [ "${NO_PRERUN_QCOW2}" = "0" ]; then
-	IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
+IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 
-	unmount_image "${IMG_FILE}"
+unmount_image "${IMG_FILE}"
 
-	rm -f "${IMG_FILE}"
+rm -f "${IMG_FILE}"
 
-	rm -rf "${ROOTFS_DIR}"
-	mkdir -p "${ROOTFS_DIR}"
+rm -rf "${ROOTFS_DIR}"
+mkdir -p "${ROOTFS_DIR}"
 
-	BOOT_SIZE="$((256 * 1024 * 1024))"
-	ROOT_SIZE=$(du --apparent-size -s "${EXPORT_ROOTFS_DIR}" --exclude var/cache/apt/archives --exclude boot --block-size=1 | cut -f 1)
+BOOT_SIZE="$((512 * 1024 * 1024))"
+ROOT_SIZE=$(du -x --apparent-size -s "${EXPORT_ROOTFS_DIR}" --exclude var/cache/apt/archives --exclude boot/firmware --block-size=1 | cut -f 1)
 
-	# All partition sizes and starts will be aligned to this size
-	ALIGN="$((4 * 1024 * 1024))"
-	# Add this much space to the calculated file size. This allows for
-	# some overhead (since actual space usage is usually rounded up to the
-	# filesystem block size) and gives some free space on the resulting
-	# image.
-	ROOT_MARGIN="$(echo "($ROOT_SIZE * 0.2 + 200 * 1024 * 1024) / 1" | bc)"
+# All partition sizes and starts will be aligned to this size
+ALIGN="$((8 * 1024 * 1024))"
+# Add this much space to the calculated file size. This allows for
+# some overhead (since actual space usage is usually rounded up to the
+# filesystem block size) and gives some free space on the resulting
+# image.
+ROOT_MARGIN="$(echo "($ROOT_SIZE * 0.2 + 200 * 1024 * 1024) / 1" | bc)"
 
-	BOOT_PART_START=$((ALIGN))
-	BOOT_PART_SIZE=$(((BOOT_SIZE + ALIGN - 1) / ALIGN * ALIGN))
-	ROOT_PART_START=$((BOOT_PART_START + BOOT_PART_SIZE))
-	ROOT_PART_SIZE=$(((ROOT_SIZE + ROOT_MARGIN + ALIGN  - 1) / ALIGN * ALIGN))
-	IMG_SIZE=$((BOOT_PART_START + BOOT_PART_SIZE + ROOT_PART_SIZE))
+BOOT_PART_START=$((ALIGN))
+BOOT_PART_SIZE=$(((BOOT_SIZE + ALIGN - 1) / ALIGN * ALIGN))
+ROOT_PART_START=$((BOOT_PART_START + BOOT_PART_SIZE))
+ROOT_PART_SIZE=$(((ROOT_SIZE + ROOT_MARGIN + ALIGN  - 1) / ALIGN * ALIGN))
+IMG_SIZE=$((BOOT_PART_START + BOOT_PART_SIZE + ROOT_PART_SIZE))
 
-	truncate -s "${IMG_SIZE}" "${IMG_FILE}"
+truncate -s "${IMG_SIZE}" "${IMG_FILE}"
 
-	parted --script "${IMG_FILE}" mklabel msdos
-	parted --script "${IMG_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
-	parted --script "${IMG_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
+parted --script "${IMG_FILE}" mklabel msdos
+parted --script "${IMG_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
+parted --script "${IMG_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
+# parted >= 3.7 leaves the MBR boot code zeroed, and parted <= 3.6 (as used by
+# the first-boot resize) then rewrites the MBR with a new disk ID, breaking
+# PARTUUID. Any non-zero first byte avoids that, so write a minimal x86 stub
+# that halts if BIOS-booted: cli; hlt; jmp $-1 (fa f4 eb fd)
+printf '\xfa\xf4\xeb\xfd' | dd of="${IMG_FILE}" conv=notrunc status=none
 
-	PARTED_OUT=$(parted -sm "${IMG_FILE}" unit b print)
-	BOOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 2 | tr -d B)
-	BOOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 4 | tr -d B)
+echo "Creating loop device..."
+cnt=0
+until ensure_next_loopdev && LOOP_DEV="$(losetup --show --find --partscan "$IMG_FILE")"; do
+	if [ $cnt -lt 5 ]; then
+		cnt=$((cnt + 1))
+		echo "Error in losetup.  Retrying..."
+		sleep 5
+	else
+		echo "ERROR: losetup failed; exiting"
+		exit 1
+	fi
+done
 
-	ROOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 2 | tr -d B)
-	ROOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 4 | tr -d B)
+ensure_loopdev_partitions "$LOOP_DEV"
+BOOT_DEV="${LOOP_DEV}p1"
+ROOT_DEV="${LOOP_DEV}p2"
 
-	echo "Mounting BOOT_DEV..."
-	cnt=0
-	until BOOT_DEV=$(losetup --show -f -o "${BOOT_OFFSET}" --sizelimit "${BOOT_LENGTH}" "${IMG_FILE}"); do
-		if [ $cnt -lt 5 ]; then
-			cnt=$((cnt + 1))
-			echo "Error in losetup for BOOT_DEV.  Retrying..."
-			sleep 5
-		else
-			echo "ERROR: losetup for BOOT_DEV failed; exiting"
-			exit 1
-		fi
-	done
-
-	echo "Mounting ROOT_DEV..."
-	cnt=0
-	until ROOT_DEV=$(losetup --show -f -o "${ROOT_OFFSET}" --sizelimit "${ROOT_LENGTH}" "${IMG_FILE}"); do
-		if [ $cnt -lt 5 ]; then
-			cnt=$((cnt + 1))
-			echo "Error in losetup for ROOT_DEV.  Retrying..."
-			sleep 5
-		else
-			echo "ERROR: losetup for ROOT_DEV failed; exiting"
-			exit 1
-		fi
-	done
-
-	echo "/boot: offset $BOOT_OFFSET, length $BOOT_LENGTH"
-	echo "/:     offset $ROOT_OFFSET, length $ROOT_LENGTH"
-
-	ROOT_FEATURES="^huge_file"
-	for FEATURE in metadata_csum 64bit; do
+ROOT_FEATURES="^huge_file"
+# 64bit is disabled for compatibility with SD card copiers and other tools
+# that may use an older e2fsprogs. Only disable features this mke2fs knows.
+DISABLE_FEATURES=(64bit)
+for FEATURE in "${DISABLE_FEATURES[@]}"; do
 	if grep -q "$FEATURE" /etc/mke2fs.conf; then
 		ROOT_FEATURES="^$FEATURE,$ROOT_FEATURES"
 	fi
-	done
-	mkdosfs -n boot -F 32 -v "$BOOT_DEV" > /dev/null
-	mkfs.ext4 -L rootfs -O "$ROOT_FEATURES" "$ROOT_DEV" > /dev/null
+done
 
-	mount -v "$ROOT_DEV" "${ROOTFS_DIR}" -t ext4
-	mkdir -p "${ROOTFS_DIR}/boot"
-	mount -v "$BOOT_DEV" "${ROOTFS_DIR}/boot" -t vfat
-
-	rsync -aHAXx --exclude /var/cache/apt/archives --exclude /boot "${EXPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
-	rsync -rtx "${EXPORT_ROOTFS_DIR}/boot/" "${ROOTFS_DIR}/boot/"
+if [ "$BOOT_PART_SIZE" -lt 134742016 ]; then
+	FAT_SIZE=16
+else
+	FAT_SIZE=32
 fi
+
+# FAT16 is limited to 65524 clusters, so 512 byte clusters only fit up to
+# ~32MB. Let mkdosfs pick the cluster size for anything larger.
+if [ "$FAT_SIZE" = 32 ] || [ "$BOOT_PART_SIZE" -lt $((65524 * 512)) ]; then
+	CLUSTER_OPTS=(-s 1)
+else
+	CLUSTER_OPTS=()
+fi
+
+mkdosfs -n bootfs -F "$FAT_SIZE" "${CLUSTER_OPTS[@]}" -v "$BOOT_DEV" > /dev/null
+
+STAGING="${STAGE_WORK_DIR}/export-root-staging"
+rm -rf "${STAGING}"
+cp -alx "${EXPORT_ROOTFS_DIR}" "${STAGING}"
+if [ -d "${STAGING}/boot/firmware" ]; then
+	find "${STAGING}/boot/firmware" -mindepth 1 -delete
+fi
+if [ -d "${STAGING}/var/cache/apt/archives" ]; then
+	find "${STAGING}/var/cache/apt/archives" -mindepth 1 -delete
+fi
+mke2fs -q -t ext4 -L rootfs -O "$ROOT_FEATURES" -d "${STAGING}" "$ROOT_DEV" > /dev/null
+rm -rf "${STAGING}"
+
+mount -v "$ROOT_DEV" "${ROOTFS_DIR}" -t ext4
+mkdir -p "${ROOTFS_DIR}/boot/firmware"
+mount -v "$BOOT_DEV" "${ROOTFS_DIR}/boot/firmware" -t vfat
+
+rsync -rtx "${EXPORT_ROOTFS_DIR}/boot/firmware/" "${ROOTFS_DIR}/boot/firmware/"
