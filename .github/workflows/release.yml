@@ -76,6 +76,7 @@ jobs:
       - name: Generate SHA256 checksums
         shell: bash
         run: |
+          sudo chown -R "$(id -u):$(id -g)" deploy
           shopt -s nullglob
           images=(deploy/*.zip)
 
