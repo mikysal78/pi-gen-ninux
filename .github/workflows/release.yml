@@ -30,10 +30,33 @@ jobs:
           sudo chmod o+x /home/runner
           sudo apt-get update
           sudo apt-get install -y \
-            coreutils quilt parted qemu-user-static qemu-user-binfmt \
+            coreutils quilt parted qemu-user-static \
             debootstrap zerofree zip dosfstools e2fsprogs \
             libarchive-tools libcap2-bin grep rsync xz-utils \
             file git curl bc gpg pigz xxd arch-test bmap-tools kmod
+
+      - name: Configure static QEMU for pi-gen
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # pi-gen richiede il nome qemu-arm.
+          sudo ln -sf /usr/bin/qemu-arm-static /usr/bin/qemu-arm
+
+          # Individua la voce qemu-arm nel file depends.
+          echo "Original dependency:"
+          grep -n 'qemu-arm' depends
+
+          # Sostituisce esclusivamente il pacchetto richiesto.
+          sed -i \
+            's/qemu-arm:qemu-user-binfmt/qemu-arm:qemu-user-static/' \
+            depends
+
+          echo "Updated dependency:"
+          grep -n 'qemu-arm' depends
+
+          echo "QEMU executable:"
+          ls -l /usr/bin/qemu-arm*
 
       - name: Configure ARM emulation
         run: |
