@@ -1,0 +1,112 @@
+---
+name: Build Raspberry Pi OS Ninux
+
+"on":
+  workflow_dispatch:
+
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pigen-ninux-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Ninux image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install pi-gen dependencies
+        run: |
+          sudo chmod o+x /home/runner
+          sudo apt-get update
+          sudo apt-get install -y \
+            coreutils quilt parted qemu-user-static binfmt-support \
+            debootstrap zerofree zip dosfstools e2fsprogs \
+            libarchive-tools libcap2-bin grep rsync xz-utils \
+            file git curl bc gpg pigz xxd arch-test bmap-tools kmod
+
+      - name: Configure ARM emulation
+        run: |
+          sudo modprobe binfmt_misc
+          sudo update-binfmts --enable qemu-arm
+          sudo update-binfmts --display qemu-arm
+
+      - name: Build Raspberry Pi OS Ninux
+        run: |
+          sudo ./build-ninux.sh
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          shopt -s nullglob
+          images=(deploy/*.zip)
+
+          if (( ${#images[@]} == 0 )); then
+            echo "ERROR: nessuna immagine ZIP trovata in deploy/"
+            exit 1
+          fi
+
+          for image in "${images[@]}"; do
+            (
+              cd deploy
+              sha256sum "$(basename "$image")" \
+                > "$(basename "$image").sha256"
+            )
+          done
+
+          ls -lh deploy/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: raspios-ninux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            deploy/*.zip
+            deploy/*.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log-${{ github.run_id }}-${{ github.run_attempt }}
+          path: work/raspios-ninux/build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: raspios-ninux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-assets
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Raspberry Pi OS Ninux ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-assets/*
+          fail_on_unmatched_files: true
