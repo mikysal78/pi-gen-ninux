@@ -30,7 +30,7 @@ jobs:
           sudo chmod o+x /home/runner
           sudo apt-get update
           sudo apt-get install -y \
-            coreutils quilt parted qemu-user-static binfmt-support \
+            coreutils quilt parted qemu-user-binfmt \
             debootstrap zerofree zip dosfstools e2fsprogs \
             libarchive-tools libcap2-bin grep rsync xz-utils \
             file git curl bc gpg pigz xxd arch-test bmap-tools kmod
@@ -38,8 +38,13 @@ jobs:
       - name: Configure ARM emulation
         run: |
           sudo modprobe binfmt_misc
-          sudo update-binfmts --enable qemu-arm
-          sudo update-binfmts --display qemu-arm
+          sudo systemctl restart systemd-binfmt
+          if [ ! -e /proc/sys/fs/binfmt_misc/qemu-arm ]; then
+            echo "ERROR: qemu-arm interpreter not registered"
+            ls -la /proc/sys/fs/binfmt_misc/
+            exit 1
+          fi
+          cat /proc/sys/fs/binfmt_misc/qemu-arm
 
       - name: Build Raspberry Pi OS Ninux
         run: |
