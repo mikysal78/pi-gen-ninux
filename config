@@ -1,0 +1,12 @@
+IMG_NAME='raspios-ninux'
+RELEASE='trixie'
+ENABLE_CLOUD_INIT=0
+
+FIRST_USER_NAME='ninux'
+FIRST_USER_PASS='ninux'
+
+STAGE_LIST="stage0 stage1 stage2 ninux"
+
+ENABLE_SSH=1
+export PUBKEY_SSH_FIRST_USER='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMuoHflKC6z/hH9l5qqinpQ5gNgmFI+r9c8Xu3kHnN9s mikysal78@gmail.com'
+PUBKEY_ONLY_SSH=0
